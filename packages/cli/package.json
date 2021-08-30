@@ -1,0 +1,32 @@
+{
+  "name": "@r2s/cli",
+  "version": "1.0.0",
+  "description": "react to svelte cli",
+  "author": "Albert Zhang (https://github.com/AlbertAZ1992)",
+  "homepage": "",
+  "license": "ISC",
+  "bin": {
+    "r2s": "./bin/r2s"
+  },
+  "dependencies": {
+    "chalk": "^4.1.1",
+    "commander": "^7.2.0",
+    "lodash": "^4.17.21",
+    "rimraf": "^3.0.2",
+    "@r2s/core": "*"
+  },
+  "scripts": {
+    "dev": "node ./bin/r2s trans -s ./demo/react/component.jsx -d ./demo/svelte/component.svelte"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib",
+    "bin"
+  ],
+  "engines": {
+    "node": ">=10.0.0"
+  }
+}

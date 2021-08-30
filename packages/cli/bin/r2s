@@ -1,0 +1,39 @@
+#!/usr/bin/env node
+/* eslint-disable strict */
+
+const program = require('commander');
+const chalk = require('chalk');
+const pkg = require('../package.json');
+const lib = require('../lib/index.js');
+
+program
+  .version(pkg.version, '-v, --version')
+  .usage('<command> [options]');
+
+program
+  .command('trans')
+  .description('Transform React Component to Svelte Component by react2svelte')
+  .option('-s, --source <dir>', 'source react component file')
+  .option('-d, --dest <dir>', 'dest svelte component directory (default: dest)')
+  .option('-f, --force', 'Overwrite file if it exists')
+  .option('-i, --ignore', 'Ignore dir in your package path')
+  .action(options => {
+    lib(options);
+  });
+
+
+program
+  .arguments('<command>')
+  .action(cmd => {
+    program.outputHelp();
+    console.log(`${chalk.red(`Unknow command ${chalk.yellow(cmd)}.`)}`);
+  });
+
+program.on('--help', () => {
+  console.log('');
+  console.log(`Run ${chalk.cyan('vcx <command> --help')} for detail usage.`);
+  console.log('');
+});
+
+program.parse(process.argv);
+
