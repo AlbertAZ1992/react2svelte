@@ -1,20 +1,29 @@
 
 import React, { useState } from 'react';
 
-function Example(props) {
+
+function CC () {
+  return <div>hi</div>
+}
+
+export default function Example(props) {
 
   const [ name, setName ] = useState('test');
 
-  const content = () => {
-    if (name === 'xxx') {
-      return <div>{name}</div>
-    }
-    return <div>hello</div>
-  }
+  const a = 1;
+
+  const b = 2;
+
+  // const content = () => {
+  //   if (name === 'xxx') {
+  //     return <div>{name}</div>
+  //   }
+  //   return <div>hello</div>
+  // }
 
   return (
     <div>
-      <div>{ content() }</div>
+      <CC />
       <input
         css={{
           color: "red",
@@ -29,4 +38,4 @@ function Example(props) {
 
 export const Component = Example;
 
-export default Example;
+// export default Example;

@@ -4,7 +4,7 @@
     "target": "ES5" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017','ES2018' or 'ESNEXT'. */,
     "module": "commonjs" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */,
     "lib": [
-      "es2015",
+      "es2016",
       "dom"
     ] /* Specify library files to be included in the compilation. */,
     // "allowJs": true,                       /* Allow javascript files to be compiled. */
@@ -41,11 +41,12 @@
     "baseUrl": "./" /* Base directory to resolve non-absolute module names. */,
     "paths": {
       "@babel/types": ["node_modules/@types/babel-types"],
-      "@babel/traverse": ["node_modules/@types/babel-traverse"],
+      // "@babel/traverse": ["node_modules/@types/babel-traverse"],
       "@babel/generator": ["node_modules/@types/babel-generator"],
-      "@babel/template": ["node_modules/@types/babel-template"]
+      // "@babel/template": ["node_modules/@types/babel-template"]
     } /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */,
     // "rootDirs": [],                        /* List of root folders whose combined content represents the structure of the project at runtime. */
+    "skipLibCheck": true,
     "typeRoots": [
       "node_modules/@types"
     ] /* List of folders to include type definitions from. */,
@@ -62,5 +63,7 @@
     // "experimentalDecorators": true,        /* Enables experimental support for ES7 decorators. */
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
   },
+
+  "include": ["src", "typings.d.ts"],
   "exclude": ["node_modules", "lib", "bin"]
 }
