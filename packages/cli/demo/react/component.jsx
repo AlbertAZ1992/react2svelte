@@ -27,7 +27,10 @@ function Example(props) {
     let c = 1
     if (name === 'xxx') {
       return <div>{name}</div>
+    } else if (name === 'x') {
+    	return 's';
     }
+
     return <div>{c}</div>
   }
 

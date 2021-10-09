@@ -3,6 +3,7 @@ import traverse from '@babel/traverse';
 import generator from '@babel/generator';
 import * as babelParser from '@babel/parser';
 import get from 'lodash/get';
+import set from 'lodash/set';
 import * as svelteCompiler from 'svelte/compiler';
 import * as t from './helpers/ast';
 import canR2S from './helpers/can-r2s';
@@ -213,7 +214,40 @@ function getComponentTemplate({
           })
 
 
-        } else if (t.isVariableDeclaration(bodyStatementAst)) {
+        } else if (t.isIfStatement(bodyStatementAst)) {
+          let finalALternate = null
+          let currentAlternate = bodyStatementAst.alternate;
+          let level = 0;
+          while (currentAlternate && t.isIfStatement(currentAlternate)) {
+            level +=1;
+            currentAlternate = currentAlternate.alternate;
+          }
+          if (!currentAlternate) {
+            for (let bodyStatementAstForIfStatement of body.body) {
+              if (t.isReturnStatement(bodyStatementAstForIfStatement)) {
+                finalALternate = bodyStatementAstForIfStatement.argument;
+                break;
+              }
+            }
+          }
+
+          if (finalALternate) {
+            const setPathLevels = new Array(level);
+            set(bodyStatementAst, setPathLevels.fill('alternate').join('.'), finalALternate);
+          }
+
+          console.log(230, currentAlternate);
+          console.log(231, bodyStatementAst);
+
+          return transformSvelteTemplate({
+            node: bodyStatementAst,
+            variableDeclarations,
+            functionDeclarations,
+            scriptAsts,
+            blockInfo: {},
+          })
+        }
+        else if (t.isVariableDeclaration(bodyStatementAst)) {
           if (t.hasJSX(bodyStatementAst)) {
             // getComponentTemplate({ componentAst: bodyStatementAst, scriptAsts });
             // variableDeclarations.push(bodyStatement);
@@ -348,8 +382,37 @@ function transformSvelteTemplate({
         blockInfo: {},
       });
     }
+
+    if (t.isCallExpression(node.expression)) {
+      const callName = get(node.expression, 'callee.name');
+      if (callName) {
+        let callComponentAst = null;
+        for (let functionDeclaration of functionDeclarations) {
+          if (get(functionDeclaration, 'id.name') === callName) {
+            callComponentAst = functionDeclaration;
+          }
+        }
+
+        for (let variableDeclaration of variableDeclarations) {
+          for (let declaration of variableDeclaration.declarations) {
+            if (get(declaration, 'id.name') === callName) {
+              callComponentAst = declaration.init;
+            }
+          }
+        }
+
+        return getComponentTemplate({
+          componentAst: callComponentAst,
+          variableDeclarations,
+          functionDeclarations,
+          scriptAsts,
+        });
+      }
+
+    }
+
     return generator(node).code
-  } else if (t.isConditionalExpression(node)) {
+  } else if (t.isConditionalExpression(node) || t.isIfStatement(node)) {
     let str = '{#if ' + generator(node.test).code + '}';
     str += transformSvelteTemplate({
       node: node.consequent,
