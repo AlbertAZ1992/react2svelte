@@ -2,10 +2,9 @@
 import traverse from '@babel/traverse';
 import generator from '@babel/generator';
 import get from 'lodash/get';
-import * as babelParser from '@babel/parser';
-import * as svelteCompiler from 'svelte/compiler';
 
-import * as t from './ast';
+
+import * as t from './helpers/ast';
 import canR2S from './helpers/can-r2s';
 import templateStyle from './helpers/template-style';
 
@@ -24,81 +23,58 @@ export function transformR2SAst(ast: t.Node, code: string): any {
   const templateAsts: any[] = [];
   let newTemplateCode = '';
 
-  const functionComponentAsts = findFunctionComponentAsts(ast);
+  const functionComponentAsts = getFunctionComponentAsts(ast);
 
   for (let functionComponentAst of functionComponentAsts) {
-    const templateBlock = transformComponentBlockAst(functionComponentAst, COMPONENT_TYPE.FUNCTION_COMPONENT, scriptAsts, templateAsts);
+    const templateBlock = transformComponentBlockAst({
+      path: functionComponentAst,
+      type: COMPONENT_TYPE.FUNCTION_COMPONENT,
+      scriptAsts,
+      templateAsts
+    });
     newTemplateCode = `${newTemplateCode}${templateBlock}`;
   }
-
-  const declarations: any[] = [];
-  const scriptProgramBodyAst: any[] = [];
-
-  for (let scriptAst of scriptAsts) {
-    if (t.isVariableDeclaration(scriptAst)) {
-      if (scriptAst.kind === 'const') {
-        scriptAst.kind = 'let';
-      }
-      for (let declaration of scriptAst.declarations) {
-        declarations.push(declaration);
-      }
-    }
-    scriptProgramBodyAst.push(scriptAst);
-  }
-  const newScriptAst = t.program(scriptProgramBodyAst);
-  const newScriptCode = generator(newScriptAst).code;
-
-
-
-  console.log('scriptAsts', scriptAsts);
-  console.log('templateAsts', templateAsts);
-  console.log('newScriptCode', newScriptCode);
-  console.log('newTemplateCode', newTemplateCode);
-
-
-  const svelteCode = '<script>\n' + newScriptCode.replace(/\<\/script/g, '<\\/script') + '\n</script>\n' + newTemplateCode;
-
-  const compiledSvelteCode = svelteCompiler.compile(svelteCode, { name: 'R2SComponent' })
-
-  console.log(compiledSvelteCode);
-  // const newComponentAst = babelParser.parse(compiledSvelteCode.js.code, { sourceType: 'module'});
-
-
 
   return {
     scriptAsts,
     templateAsts,
+    newTemplateCode
   }
 }
 
-function checkComponentAst(
-  path: t.NodePath<t.FunctionDeclaration> | t.NodePath<t.FunctionExpression> | t.NodePath<t.ArrowFunctionExpression>,
-  keetAsts: t.NodePath<any>[],
-  safeAsts: boolean[],
-) {
-  const start = path?.node?.start;
-  const end = path?.node?.end;
-  if (start && end && !safeAsts[start] && canR2S(path)) {
-    for (let i = start; i < end; i++) {
-      safeAsts[i] = true
-    }
-    keetAsts.push(path);
-  }
-}
-
-function findFunctionComponentAsts(ast: t.Node): t.NodePath<any>[] {
+/**
+ *
+ * @param ast
+ * @returns list of function component ast
+ */
+function getFunctionComponentAsts(ast: t.Node): t.NodePath<any>[] {
   const keetAsts: t.NodePath<any>[] = [];
   const safeAsts: boolean[] = [];
+
+  const travalCode = (
+    path: t.NodePath<t.FunctionDeclaration> | t.NodePath<t.FunctionExpression> | t.NodePath<t.ArrowFunctionExpression>,
+    keetAsts: t.NodePath<any>[],
+    safeAsts: boolean[],
+  ) => {
+    const start = path?.node?.start;
+    const end = path?.node?.end;
+    if (start && end && !safeAsts[start] && canR2S(path)) {
+      for (let i = start; i < end; i++) {
+        safeAsts[i] = true
+      }
+      keetAsts.push(path);
+    }
+  }
   // const
   traverse(ast, {
     FunctionDeclaration(path: t.NodePath<t.FunctionDeclaration>) {
-      checkComponentAst(path, keetAsts, safeAsts);
+      travalCode(path, keetAsts, safeAsts);
     },
     FunctionExpression(path: t.NodePath<t.FunctionExpression>) {
-      checkComponentAst(path, keetAsts, safeAsts);
+      travalCode(path, keetAsts, safeAsts);
     },
     ArrowFunctionExpression(path: t.NodePath<t.ArrowFunctionExpression>) {
-      checkComponentAst(path, keetAsts, safeAsts);
+      travalCode(path, keetAsts, safeAsts);
     },
   });
 
@@ -106,12 +82,17 @@ function findFunctionComponentAsts(ast: t.Node): t.NodePath<any>[] {
 }
 
 
-function transformComponentBlockAst(
+function transformComponentBlockAst({
+  path,
+  type,
+  scriptAsts,
+  templateAsts,
+} : {
   path: t.NodePath<t.FunctionDeclaration> | t.NodePath<t.FunctionExpression> | t.NodePath<t.ArrowFunctionExpression>,
   type: COMPONENT_TYPE,
   scriptAsts: any,
   templateAsts: any,
-) {
+}) {
 
   if (type === COMPONENT_TYPE.FUNCTION_COMPONENT) {
     let templateAst: any;

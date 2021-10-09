@@ -1,12 +1,9 @@
 
 import React, { useState } from 'react';
 
+const e = () => {}
 
-function CC () {
-  return <div>hi</div>
-}
-
-export default function Example(props) {
+function Example(props) {
 
   const [ name, setName ] = useState('test');
 
@@ -14,21 +11,39 @@ export default function Example(props) {
 
   const b = 2;
 
-  // const content = () => {
-  //   if (name === 'xxx') {
-  //     return <div>{name}</div>
-  //   }
-  //   return <div>hello</div>
-  // }
+  const c = <div>xx</div>;
+
+    const d = a === 1 ? <div>xx</div> : <span>2</span>;
+
+  function CC() {
+	return a ===1 ? null : <div style={{ width: 120, height: 200 }}>hi</div>
+  }
+
+  const foo = () => {
+    return <div>hisss</div>
+  }
+
+  const content = () => {
+    let c = 1
+    if (name === 'xxx') {
+      return <div>{name}</div>
+    }
+    return <div>{c}</div>
+  }
+
+
 
   return (
     <div>
-      <CC />
+      nihao <span>ssss</span><CC />
+    <foo />
+    	{ a }
+      <div>{ content() }</div>
       <input
         css={{
           color: "red",
         }}
-        valye={name}
+        value={name}
         onChange={(event) => setName(event.target.value)}
       />
       { `Hello World! ${props.title}` }
@@ -36,6 +51,11 @@ export default function Example(props) {
   );
 }
 
+const fn = function () {
+}
+
 export const Component = Example;
 
-// export default Example;
+//export default function c() {
+//}
+export default Example;
