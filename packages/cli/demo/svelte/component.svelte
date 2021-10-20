@@ -1,3 +1,9 @@
+<script>
+let [name, setName] = useState('test');
+let a = 1;
+let b = 2;
+let comments = [1, 2, 3];
+</script>
 <div>
       nihao <span>ssss</span>{#if a === 1}{:else}<div style="width:120;height:200">hi</div>{/if}
     <div>hisss</div>

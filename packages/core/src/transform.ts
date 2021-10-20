@@ -4,7 +4,6 @@ import get from 'lodash/get';
 import set from 'lodash/set';
 import * as svelteCompiler from 'svelte/compiler';
 import * as t from './helpers/ast';
-import canR2S from './helpers/can-r2s';
 import isHtmlTag from './helpers/is-html-tag';
 import templateStyle from './helpers/template-style';
 
@@ -59,9 +58,26 @@ export function generateR2SCode({
   })
 
   console.log('componentTemplate', componentTemplate);
-  // console.log('scriptAsts', scriptAsts);
+  console.log('scriptAsts', scriptAsts);
 
-  return componentTemplate;
+  const scriptProgramBodyAst: any[] = [];
+
+  for (let scriptAst of scriptAsts) {
+    if (t.isVariableDeclaration(scriptAst)) {
+      if (scriptAst.kind === 'const') {
+        scriptAst.kind = 'let';
+      }
+    }
+    scriptProgramBodyAst.push(scriptAst);
+  }
+  const svelteScriptAst = t.program(scriptProgramBodyAst);
+  const componentScriptCode = generator(svelteScriptAst).code;
+
+  const svelteCode = '<script>\n' + componentScriptCode + '\n</script>\n' + componentTemplate;
+
+  // .replace(/\<\/script/g, '<\\/script')
+
+  return svelteCode;
 
 }
 
