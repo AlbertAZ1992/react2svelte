@@ -13,8 +13,9 @@ function Example(props) {
 
   const c = <div>xx</div>;
 
-    const d = a === 1 ? <div>xx</div> : <span>2</span>;
+  const d = a === 1 ? <div>xx</div> : <span>2</span>;
 
+  const comments = [1, 2, 3];
   function CC() {
 	return a ===1 ? null : <div style={{ width: 120, height: 200 }}>hi</div>
   }
@@ -26,6 +27,7 @@ function Example(props) {
   const content = () => {
     let c = 1
     if (name === 'xxx') {
+      name += '2'
       return <div>{name}</div>
     } else if (name === 'x') {
     	return 's';
@@ -49,7 +51,15 @@ function Example(props) {
         value={name}
         onChange={(event) => setName(event.target.value)}
       />
+      w
       { `Hello World! ${props.title}` }
+      {
+	      comments.map((comment) => {
+    	  return (
+          <CC comment={comment} key={comment.id} />
+        )
+        })
+      }
     </div>
   );
 }

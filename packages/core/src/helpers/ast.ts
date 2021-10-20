@@ -1,4 +1,5 @@
-import {
+import traverse,
+{
   TraverseOptions,
   NodePath,
   Visitor,
@@ -46,12 +47,12 @@ function hasJSX(node: any): boolean | t.Node {
   for (let key in node) {
     const item = node[key];
     if (item === 'JSXElement') {
-        return true;
+      return true;
     } else if (item && typeof item === 'object') {
-        const found = hasJSX(item);
-        if (found) {
-            return found === true ? item : found;
-        }
+      const has = hasJSX(item);
+      if (has) {
+        return true === has ? has : item;
+      }
     }
   }
   return false;
@@ -59,6 +60,7 @@ function hasJSX(node: any): boolean | t.Node {
 
 export * from '@babel/types';
 export {
+  traverse,
   AST,
   TraverseOptions,
   NodePath,
