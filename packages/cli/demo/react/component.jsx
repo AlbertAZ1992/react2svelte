@@ -11,13 +11,14 @@ function Example(props) {
 
   const b = 2;
 
-  const c = <div>xx</div>;
+  const c = <div>1234</div>;
 
   const d = a === 1 ? <div>xx</div> : <span>2</span>;
 
   const comments = [1, 2, 3];
+
   function CC() {
-	return a ===1 ? null : <div style={{ width: 120, height: 200 }}>hi</div>
+  	return a === 2 ? <div>hihi</div> : <div style={{ width: 120, height: 200 }}>hi</div>
   }
 
   const foo = () => {
@@ -26,11 +27,12 @@ function Example(props) {
 
   const content = () => {
     let c = 1
-    if (name === 'xxx') {
-      name += '2'
-      return <div>{name}</div>
-    } else if (name === 'x') {
-    	return 's';
+    if (a === 2) {
+      a += 2
+      return <div>{a}</div>
+    } else if (a === 1) {
+      let name = 5
+    	return name;
     }
 
     return <div>{c}</div>
@@ -40,8 +42,9 @@ function Example(props) {
 
   return (
     <div>
-      nihao <span>ssss</span><CC />
-    <foo />
+      nihao <span>ssss</span>
+      <CC />
+      <foo />
     	{ a }
       <div>{ content() }</div>
       <input

@@ -44,13 +44,6 @@ export function generateR2SCode({
     return '';
   }
 
-
-  // const { templateAst } = getSvelteTemplateAst({
-  //   exportDefaultComponentAst,
-  //   variableDeclarations,
-  //   functionDeclarations,
-  // });
-
   let scriptAsts: any[] = [];
   const componentTemplate = getExportDefaultComponentTemplate({
     exportDefaultComponentAst,
@@ -61,7 +54,6 @@ export function generateR2SCode({
   console.log('scriptAsts', scriptAsts);
 
   const scriptProgramBodyAst: any[] = [];
-
   for (let scriptAst of scriptAsts) {
     if (t.isVariableDeclaration(scriptAst)) {
       if (scriptAst.kind === 'const') {
@@ -70,15 +62,13 @@ export function generateR2SCode({
     }
     scriptProgramBodyAst.push(scriptAst);
   }
+
   const svelteScriptAst = t.program(scriptProgramBodyAst);
   const componentScriptCode = generator(svelteScriptAst).code;
 
   const svelteCode = '<script>\n' + componentScriptCode + '\n</script>\n' + componentTemplate;
 
-  // .replace(/\<\/script/g, '<\\/script')
-
   return svelteCode;
-
 }
 
 function getAllDeclarations(ast: t.Node): any {
@@ -148,36 +138,90 @@ function getExportDefaultComponentTemplate({
   exportDefaultComponentAst: t.NodePath<any>,
   scriptAsts: t.Node[]
 }): string {
-  const { node, scope } = exportDefaultComponentAst;
-  const { body, params } = node;
-  const param = params ? params[0] : null;
+  // 遍历所有包含 JSXElement 的函数定义，重新标记函数内部的变量定义
+  const { scope: componentScope } = exportDefaultComponentAst;
+  const withJSXElementFunctionPaths: any[] = [];
+  exportDefaultComponentAst.traverse({
+    enter(path: t.NodePath<any>) {
+      if (t.isFunctionReturnStatement({ // 调过组件函数本身的 return
+        functionAstNode: exportDefaultComponentAst.node,
+        returnStatementPath: path,
+      })) {
+        path.skip();
+      }
+    },
+    FunctionDeclaration(path: t.NodePath<t.FunctionDeclaration>) {
+      if (t.hasJSX(path.node)) {
+        withJSXElementFunctionPaths.push(path);
+      }
+    },
+    ArrowFunctionExpression(path: t.NodePath<t.ArrowFunctionExpression>) {
+      if (t.hasJSX(path.node)) {
+        withJSXElementFunctionPaths.push(path);
+      }
+    },
+    FunctionExpression(path: t.NodePath<t.FunctionExpression>) {
+      if (t.hasJSX(path.node)) {
+        withJSXElementFunctionPaths.push(path);
+      }
+    },
+  });
 
-
-  const variableDeclarations: any[] = [];
-  const functionDeclarations: any[] = [];
-
-  if (t.isBlockStatement(body)) {
-    for (let bodyStatementAst of body.body) {
-      if (t.isVariableDeclaration(bodyStatementAst)) {
-        if (t.hasJSX(bodyStatementAst)) {
-          variableDeclarations.push(bodyStatementAst);
-        } else {
-          scriptAsts.push(bodyStatementAst);
-        }
-      } else if (t.isFunctionDeclaration(bodyStatementAst)) {
-        if (t.hasJSX(bodyStatementAst)) {
-          functionDeclarations.push(bodyStatementAst);
-        } else {
-          scriptAsts.push(bodyStatementAst);
+  // 重新命名所有包含 JSXElement 的函数内部的变量定义
+  for (let functionPath of withJSXElementFunctionPaths) {
+    const { node } = functionPath;
+    const currentScope = functionPath.scope;
+    const functionDeclarationBodyAst = node.body
+    if (t.isBlockStatement(functionDeclarationBodyAst)) {
+      for (let bodyStatementAst of functionDeclarationBodyAst.body) {
+        if (t.isVariableDeclaration(bodyStatementAst)) {
+          const declaratorName = get(bodyStatementAst.declarations[0], 'id.name'); // 不支持连续定义
+          if (declaratorName) {
+            const scopedDeclaratorName = componentScope.generateUidIdentifier(declaratorName);
+            currentScope.rename(declaratorName, scopedDeclaratorName.name);
+          }
         }
       }
     }
   }
 
+
+  const withJSXVariableDeclarations: any[] = [];
+  const withJSXFunctionDeclarations: any[] = [];
+  const { node } = exportDefaultComponentAst;
+  const { body, params } = node;
+  // const param = params ? params[0] : null;
+
+  debugger;
+  if (t.isBlockStatement(body)) {
+    debugger;
+    for (let bodyStatementAst of body.body) {
+      debugger;
+      if (t.isVariableDeclaration(bodyStatementAst)) {
+        if (t.hasJSX(bodyStatementAst)) {
+          withJSXVariableDeclarations.push(bodyStatementAst);
+        }
+        // else {
+        //   scriptAsts.push(bodyStatementAst);
+        // }
+      } else if (t.isFunctionDeclaration(bodyStatementAst)) {
+        if (t.hasJSX(bodyStatementAst)) {
+          withJSXFunctionDeclarations.push(bodyStatementAst);
+        }
+        // else {
+        //   scriptAsts.push(bodyStatementAst);
+        // }
+      }
+    }
+  }
+
+
+
+  // 开始转换
   return getComponentTemplate({
     componentAst: exportDefaultComponentAst.node,
-    variableDeclarations,
-    functionDeclarations,
+    variableDeclarations: withJSXVariableDeclarations,
+    functionDeclarations: withJSXFunctionDeclarations,
     scriptAsts,
   });
 }
@@ -327,7 +371,7 @@ function transformSvelteTemplate({
       if (name === 'className') {
         str += 'class';
       } else if (/^on[A-Z]/.test(name)) {
-        str += 'on:' + name.substr(2).toLowerCase();
+        str += `on:${name.substr(2).toLowerCase()}`;
       } else {
         str += name;
       }
@@ -335,10 +379,7 @@ function transformSvelteTemplate({
         str += '=';
         if (name === 'style' && t.isJSXExpressionContainer(value)) {
           let styleProperties = get(value, 'expression.properties');
-
-          // let styleObjectString = generator(value.expression, { compact: true }).code;
-          // let styleObject = JSON.parse(styleObjectString);
-          str +=  templateStyle(styleProperties);
+          str += templateStyle(styleProperties);
         } else {
           str += generator(value, { compact: true }).code
         }
@@ -362,29 +403,12 @@ function transformSvelteTemplate({
     }
     return str;
   } else if (t.isJSXText(node)) { // 转换成注释
-    let value = node.value;
-    // if (value) {
-    //   if (value.trim()) {
-    //     value = value.replace(/(^\s*\n\s*|\s*\n\s*$)/g, '<!--$1-->');
-    //   }
-    // }
-    return value;
+    return node.value || '';
   } else if (t.isJSXExpressionContainer(node)) {
 
     if (t.isCallExpression(node.expression)) { // 变量或函数调用
       const callName = get(node.expression, 'callee.name');
-      if (!callName && t.isMemberExpression(node.expression.callee) && get(node.expression, 'callee.property.name') === 'map') { // xxx.map
-        const callback = node.expression.arguments[0] as any;
-        const callee = node.expression.callee as any;
-        let str = `{#each ${generator(callee.object).code} as ${callback.params.map((p: any) => p.name).join(', ')}}`;
-        str += `}${getComponentTemplate({
-          componentAst: callback,
-          variableDeclarations,
-          functionDeclarations,
-          scriptAsts,
-        })}{/each}`;
-        return str
-      } else if (callName) {
+      if (callName) { // 直接调用函数或变量
         let callComponentAst = null;
         for (let functionDeclaration of functionDeclarations) {
           if (get(functionDeclaration, 'id.name') === callName) {
@@ -406,6 +430,18 @@ function transformSvelteTemplate({
           functionDeclarations,
           scriptAsts,
         });
+      } else if (t.isMapCallExpression(node.expression)) { // map 函数
+        const callback = node.expression.arguments[0];
+        const callbackParams = get(callback, 'params') || [];
+        const calleeNode = get(node.expression, 'callee.object');
+        let str = `{#each ${generator(calleeNode).code} as ${callbackParams.map((p: any) => p.name).join(', ')}}`;
+        str += `}${getComponentTemplate({
+          componentAst: callback,
+          variableDeclarations,
+          functionDeclarations,
+          scriptAsts,
+        })}{/each}`;
+        return str;
       }
     }
 
@@ -461,14 +497,6 @@ function transformSvelteTemplate({
     }
     str += '{/if}';
     return str;
-  } else if (t.isArrayExpression(node)) {
-    return node.elements.map((el: any) => transformSvelteTemplate({
-      node: el,
-      variableDeclarations,
-      functionDeclarations,
-      scriptAsts,
-      blockInfo: {},
-    })).join('');
   }
   return '';
 }

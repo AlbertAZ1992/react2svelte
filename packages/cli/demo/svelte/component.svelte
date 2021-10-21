@@ -1,16 +1,13 @@
 <script>
-let [name, setName] = useState('test');
-let a = 1;
-let b = 2;
-let comments = [1, 2, 3];
+
 </script>
 <div>
-      nihao <span>ssss</span>{#if a === 1}{:else}<div style="width:120;height:200">hi</div>{/if}
+      nihao <span>ssss</span>{#if a === 2}<div>hihi</div>{:else}<div style="width:120;height:200">hi</div>{/if}
     <div>hisss</div>
     	{a}
-      <div>{#if name === 'xxx'}{:else}<div>{c}</div>{/if}</div>
+      <div>{#if a === 2}{:else}<div>{_c}</div>{/if}</div>
       <input css={{color:"red"}} value={name} on:change={event=>setName(event.target.value)}/>
       w
       Hello World! {props.title}
-      {#each comments as comment}}{#if a === 1}{:else}<div style="width:120;height:200">hi</div>{/if}{/each}
+      {#each comments as comment}}{#if a === 2}<div>hihi</div>{:else}<div style="width:120;height:200">hi</div>{/if}{/each}
     </div>
