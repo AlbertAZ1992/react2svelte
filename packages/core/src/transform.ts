@@ -213,6 +213,8 @@ function getExportDefaultComponentTemplate({
           scopeReturnStatement,
         );
       }
+    } else { // 如果函数体包含 ifstatement，
+
     }
     return {
       scopedWithJSXElementFunctionAst,
@@ -220,9 +222,7 @@ function getExportDefaultComponentTemplate({
     };
   }
 
-
-
-
+  let traversedFunctions:  {[key:string]: unknown } = {};
   exportDefaultComponentAst.traverse({
     enter(path: t.NodePath<any>) {
       if (t.isFunctionReturnStatement({ // 调过组件函数本身的 return
@@ -231,42 +231,60 @@ function getExportDefaultComponentTemplate({
       })) {
         path.skip();
       }
+      if (!t.hasJSX(path.node)) {
+        path.skip();
+      }
     },
     FunctionDeclaration(path: t.NodePath<t.FunctionDeclaration>) {
       if (t.hasJSX(path.node)) {
+        if (traversedFunctions[get(path.node, 'loc.start.line')]) {
+          path.skip();
+        }
+        traversedFunctions[get(path.node, 'loc.start.line')] = true;
         // 更新函数 ast
         const { scopedWithJSXElementFunctionAst, scopedDeclarations } = getWrapperedWithJSXElementFunction(path);
         if (scopedWithJSXElementFunctionAst) {
-          set(path.node, 'body.body', [scopedWithJSXElementFunctionAst]);
+          path.replaceWith(t.functionDeclaration(path.node.id, path.node.params, t.blockStatement([scopedWithJSXElementFunctionAst])));
         }
         debugger;
         for (let declaration of scopedDeclarations) {
           path.insertBefore(declaration);
         }
+        debugger;
       }
     },
     ArrowFunctionExpression(path: t.NodePath<t.ArrowFunctionExpression>) {
+      if (traversedFunctions[get(path.node, 'loc.start.line')]) {
+        path.skip();
+      }
+      traversedFunctions[get(path.node, 'loc.start.line')] = true;
       if (t.hasJSX(path.node)) {
         // 更新函数 ast
         const { scopedWithJSXElementFunctionAst, scopedDeclarations } = getWrapperedWithJSXElementFunction(path);
         if (scopedWithJSXElementFunctionAst) {
-          set(path.node, 'body.body', [scopedWithJSXElementFunctionAst]);
+          path.replaceWith(t.arrowFunctionExpression(path.node.params, t.blockStatement([scopedWithJSXElementFunctionAst])));
         }
         for (let declaration of scopedDeclarations) {
           path.insertBefore(declaration);
         }
+        debugger;
       }
     },
     FunctionExpression(path: t.NodePath<t.FunctionExpression>) {
+      if (traversedFunctions[get(path.node, 'loc.start.line')]) {
+        path.skip();
+      }
+      traversedFunctions[get(path.node, 'loc.start.line')] = true;
       if (t.hasJSX(path.node)) {
         // 更新函数 ast
         const { scopedWithJSXElementFunctionAst, scopedDeclarations } = getWrapperedWithJSXElementFunction(path);
         if (scopedWithJSXElementFunctionAst) {
-          set(path.node, 'body.body', [scopedWithJSXElementFunctionAst]);
+          path.replaceWith(t.functionExpression(path.node.id, path.node.params, t.blockStatement([scopedWithJSXElementFunctionAst])));
         }
         for (let declaration of scopedDeclarations) {
           path.insertBefore(declaration);
         }
+        debugger;
       }
     },
   });

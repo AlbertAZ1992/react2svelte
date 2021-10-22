@@ -18,13 +18,30 @@ function Example(props) {
 
   const comments = [1, 2, 3];
 
+
+
   function CC() {
+    let ssssss = 7
+
+    // const render = () => {
+    //   let ttt = 2 * ssssss;
+
+    //   const render = () => {
+    //     let ttt = 2 * ssssss;
+
+    //     return <div>{ttt}</div>;
+    //   };
+
+    //   return <div>{ttt}</div>;
+    // };
+
     let aaa = a * 3;
-  	return aaa === 2 ? <div>hihi</div> : <div style={{ width: 120, height: 200 }}>hi</div>
+  	return aaa === 2 ? 555 : <div style={{ width: 120, height: 200 }}>hi</div>
   }
 
   const foo = () => {
     if (() => { return true }) {
+
     	return <div>hisss</div>
     }
 

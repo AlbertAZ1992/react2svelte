@@ -4,6 +4,7 @@
 <div>
       nihao <span>ssss</span>
       {#if () => {
+  _ssssss = 7;
   _aaa = a * 3;
   return true;
 }}{/if}
@@ -18,6 +19,7 @@
       w
       Hello World! {props.title}
       {#each comments as comment, index}}{#if () => {
+  _ssssss = 7;
   _aaa = a * 3;
   return true;
 }}{/if}{/each}
