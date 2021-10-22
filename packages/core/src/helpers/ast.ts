@@ -60,6 +60,18 @@ function isFunctionReturnStatement({
   return false;
 }
 
+function functionBodyHasIfStatement(functionNode: t.FunctionDeclaration|t.ArrowFunctionExpression|t.FunctionExpression): boolean {
+  if (t.isBlockStatement(functionNode.body)) {
+    for (let bodyStatementAst of functionNode.body.body) {
+      if (t.isIfStatement(bodyStatementAst)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return false;
+
+}
 
 function hasJSX(node: any): boolean | t.Node {
   for (let key in node) {
@@ -90,4 +102,5 @@ export {
   isRootNodePath,
   isMapCallExpression,
   isFunctionReturnStatement,
+  functionBodyHasIfStatement
 };

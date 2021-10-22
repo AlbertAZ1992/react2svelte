@@ -5,6 +5,7 @@ const e = () => {}
 
 function Example(props) {
 
+
   const [ name, setName ] = useState('test');
 
   const a = 1;
@@ -18,25 +19,29 @@ function Example(props) {
   const comments = [1, 2, 3];
 
   function CC() {
-  	return a === 2 ? <div>hihi</div> : <div style={{ width: 120, height: 200 }}>hi</div>
+    let aaa = a * 3;
+  	return aaa === 2 ? <div>hihi</div> : <div style={{ width: 120, height: 200 }}>hi</div>
   }
 
   const foo = () => {
-    return <div>hisss</div>
-  }
-
-  const content = () => {
-    let c = 1
-    if (a === 2) {
-      a += 2
-      return <div>{a}</div>
-    } else if (a === 1) {
-      let name = 5
-    	return name;
+    if (() => { return true }) {
+    	return <div>hisss</div>
     }
 
-    return <div>{c}</div>
   }
+
+  // const content = () => {
+  //   let c = 1
+  //   if (a === 4) {
+  //     a += 2
+  //     return <div>{a}</div>
+  //   } else if (a === 1) {
+  //     let name = 5
+  //   	return name;
+  //   }
+
+  //   return <div>{c}</div>
+  // }
 
 
 
@@ -46,7 +51,7 @@ function Example(props) {
       <CC />
       <foo />
     	{ a }
-      <div>{ content() }</div>
+      {/* <div>{ content() }</div> */}
       <input
         css={{
           color: "red",
@@ -57,10 +62,11 @@ function Example(props) {
       w
       { `Hello World! ${props.title}` }
       {
-	      comments.map((comment) => {
-    	  return (
-          <CC comment={comment} key={comment.id} />
-        )
+	      comments.map((comment, index) => {
+          let content = comment;
+          return (
+            <CC content={content} key={index} />
+          )
         })
       }
     </div>
