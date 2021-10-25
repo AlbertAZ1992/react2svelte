@@ -3,11 +3,7 @@
 </script>
 <div>
       nihao <span>ssss</span>
-      {#if () => {
-  _ssssss = 7;
-  _aaa = a * 3;
-  return true;
-}}{/if}
+      {#if _aaa === 2}{:else}<div style="width:120;height:200">hi</div>{/if}
       {#if () => {
   return true;
 }}{/if}
@@ -18,9 +14,5 @@
       <input css={{color:"red"}} value={name} on:change={event=>setName(event.target.value)}/>
       w
       Hello World! {props.title}
-      {#each comments as comment, index}}{#if () => {
-  _ssssss = 7;
-  _aaa = a * 3;
-  return true;
-}}{/if}{/each}
+      {#each comments as comment, index}}{#if _aaa === 2}{:else}<div style="width:120;height:200">hi</div>{/if}{/each}
     </div>
