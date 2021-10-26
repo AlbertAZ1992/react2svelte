@@ -141,8 +141,8 @@ function getExportDefaultComponentTemplate({
 
   const { scope: componentScope } = exportDefaultComponentAst;
   // 把所有包含 JSXElement 的函数拍平到一级
+  // 这里没用递归，而是做几次循环，因为写出错层套嵌 render jsx 的场景并不多见
   while (hasUnFlattenJSXElementFunctions(exportDefaultComponentAst)) {
-    // 这里没用递归，因为写出错层套嵌 render jsx 的场景并不多见
     exportDefaultComponentAst.traverse({
       enter(path: t.NodePath<any>) {
         if (t.isFunctionReturnStatement({ // 调过组件函数本身的 return
@@ -156,10 +156,6 @@ function getExportDefaultComponentTemplate({
         }
       },
       FunctionDeclaration(path: t.NodePath<t.FunctionDeclaration>) {
-        // if (traversedFunctions[get(path.node, 'loc.start.line')]) {
-        //   path.skip();
-        // }
-        // traversedFunctions[get(path.node, 'loc.start.line')] = true;
         if (t.hasJSX(path.node)) {
           updateWithJSXElementFunctionScope({
             componentScope,
@@ -169,10 +165,6 @@ function getExportDefaultComponentTemplate({
         }
       },
       ArrowFunctionExpression(path: t.NodePath<t.ArrowFunctionExpression>) {
-        // if (traversedFunctions[get(path.node, 'loc.start.line')]) {
-        //   path.skip();
-        // }
-        // traversedFunctions[get(path.node, 'loc.start.line')] = true;
         if (t.hasJSX(path.node)) {
           updateWithJSXElementFunctionScope({
             componentScope,
@@ -182,10 +174,6 @@ function getExportDefaultComponentTemplate({
         }
       },
       FunctionExpression(path: t.NodePath<t.FunctionExpression>) {
-        // if (traversedFunctions[get(path.node, 'loc.start.line')]) {
-        //   path.skip();
-        // }
-        // traversedFunctions[get(path.node, 'loc.start.line')] = true;
         if (t.hasJSX(path.node)) {
           updateWithJSXElementFunctionScope({
             componentScope,
@@ -247,11 +235,30 @@ function updateWithJSXElementFunctionScope({
   const currentScope = withJSXElementFunctionPath.scope;
   const withJSXElementFunctionNode = withJSXElementFunctionPath.node;
   const functionDeclarationBodyAst = withJSXElementFunctionNode.body;
+  updateWithJSXElementStatement({
+    componentScope,
+    currentScope,
+    statementAst: functionDeclarationBodyAst,
+    globalPositionPath,
+  })
+}
+
+function updateWithJSXElementStatement({
+  componentScope,
+  currentScope,
+  statementAst,
+  globalPositionPath,
+}: {
+  componentScope: t.Scope,
+  currentScope: t.Scope,
+  statementAst: t.BlockStatement | t.Expression | t.Statement,
+  globalPositionPath: t.NodePath<any> | null,
+}) {
   let scopedDeclarations: t.Node[] = [];
   // 重命名作用域内变量
-  if (t.isBlockStatement(functionDeclarationBodyAst)) {
+  if (t.isBlockStatement(statementAst)) {
     let index = 0;
-    for (let bodyStatementAst of functionDeclarationBodyAst.body) {
+    for (let bodyStatementAst of statementAst.body) {
       debugger;
       if (t.isVariableDeclaration(bodyStatementAst)) {
         let declarations: any = [];
@@ -279,13 +286,30 @@ function updateWithJSXElementFunctionScope({
           }
         }
         // 删掉 variableDeclaration 节点，替换成 expressions
-        ((withJSXElementFunctionPath.node as any).body as any).body.splice(index, 1, ...expressions);
-        // if (expressions.length === 0) { // expressions 为空的时候不会替换，只会删除原来的定义，所以 index 需要减 1
-        //   index -= 1;
-        // }
+        statementAst.body.splice(index, 1, ...expressions);
         // 该变量需要提到全局
         scopedDeclarations.push(t.variableDeclaration('let', declarations));
 
+      } else if (t.isIfStatement(bodyStatementAst)) { // 如果是 if statement 要遍历每个 if 项，有点复杂了
+        updateWithJSXElementStatement({
+          componentScope,
+          currentScope,
+          statementAst: bodyStatementAst.consequent,
+          globalPositionPath,
+        });
+
+        let currentAlternate = bodyStatementAst.alternate;
+        while (currentAlternate && t.isIfStatement(currentAlternate)) {
+          if (globalPositionPath) {
+            updateWithJSXElementStatement({
+              componentScope,
+              currentScope,
+              statementAst: currentAlternate.consequent,
+              globalPositionPath,
+            });
+          }
+          currentAlternate = currentAlternate.alternate;
+        }
       }
       index += 1;
     }
@@ -296,6 +320,7 @@ function updateWithJSXElementFunctionScope({
       globalPositionPath.insertBefore(declaration);
     }
   }
+
 }
 
 function hasUnFlattenJSXElementFunctions(componentAst: t.NodePath<any>): boolean {

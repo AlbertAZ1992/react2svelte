@@ -47,18 +47,34 @@ function Example(props) {
 
   }
 
-  // const content = () => {
-  //   let c = 1
-  //   if (a === 4) {
-  //     a += 2
-  //     return <div>{a}</div>
-  //   } else if (a === 1) {
-  //     let name = 5
-  //   	return name;
-  //   }
+  const content = () => {
+    let c = 1
+    if (a === 4) {
+      a += 2
+      return <div>{a}</div>
+    } else if (a === 1) {
+      let name = 5
+    	return name;
+    } else if (a === 3) {
 
-  //   return <div>{c}</div>
-  // }
+      const render = () => {
+        let ttt = 2 * ssssss;
+
+        const render = () => {
+          let ttt = 4 * ssssss;
+
+          return <div>{ttt}</div>;
+        };
+
+        return <div><div>ttt</div>{ render() }</div>;
+      };
+
+      let aaa = a * 3;
+      return aaa === 2 ? render() : <div style={{ width: 120, height: 200 }}>hi</div>
+    }
+
+    return <div>{c}</div>
+  }
 
 
 

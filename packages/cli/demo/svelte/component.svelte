@@ -11,7 +11,7 @@
       {
   /* <div>{ content() }</div> */
 }
-      <input css={{color:"red"}} value={name} on:change={event=>setName(event.target.value)}/>
+      <input css={{color:"red"}} value={_name} on:change={event=>setName(event.target.value)}/>
       w
       Hello World! {props.title}
       {#each comments as comment, index}}{#if _aaa === 2}{:else}<div style="width:120;height:200">hi</div>{/if}{/each}
