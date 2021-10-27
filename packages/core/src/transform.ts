@@ -6,6 +6,7 @@ import * as svelteCompiler from 'svelte/compiler';
 import * as t from './helpers/ast';
 import isHtmlTag from './helpers/is-html-tag';
 import templateStyle from './helpers/template-style';
+import { updateWithJSXElementStatement, hasUnFlattenJSXElementFunctions, } from './helpers/template';
 
 export enum COMPONENT_TYPE {
   FUNCTION_COMPONENT = 'FUNCTION_COMPONENT',
@@ -139,6 +140,26 @@ function getExportDefaultComponentTemplate({
   scriptAsts: t.Node[]
 }): string {
 
+  const updateWithJSXElementFunctionScope = ({
+    componentScope,
+    withJSXElementFunctionPath,
+    globalPositionPath,
+  }: {
+    componentScope: t.Scope,
+    withJSXElementFunctionPath: t.NodePath<t.FunctionDeclaration> | t.NodePath<t.ArrowFunctionExpression> | t.NodePath<t.FunctionExpression>,
+    globalPositionPath: t.NodePath<any> | null,
+  }) => {
+    const currentScope = withJSXElementFunctionPath.scope;
+    const withJSXElementFunctionNode = withJSXElementFunctionPath.node;
+    const functionDeclarationBodyAst = withJSXElementFunctionNode.body;
+    updateWithJSXElementStatement({
+      componentScope,
+      currentScope,
+      statementAst: functionDeclarationBodyAst,
+      globalPositionPath,
+    })
+  };
+
   const { scope: componentScope } = exportDefaultComponentAst;
   // 把所有包含 JSXElement 的函数拍平到一级
   // 这里没用递归，而是做几次循环，因为写出错层套嵌 render jsx 的场景并不多见
@@ -185,6 +206,116 @@ function getExportDefaultComponentTemplate({
     });
   }
 
+
+
+  const getWrapperedWithJSXElementFunction = (
+    withJSXElementFunctionPath: t.NodePath<t.FunctionDeclaration> | t.NodePath<t.ArrowFunctionExpression> | t.NodePath<t.FunctionExpression>
+  ): t.IfStatement | null => {
+    const withJSXElementFunctionNode = withJSXElementFunctionPath.node;
+    const functionDeclarationBodyAst = withJSXElementFunctionNode.body;
+    let scopedWithJSXElementFunctionAst: t.IfStatement | null = null;
+    // 给函数体包上 ifstatement
+    if (!t.functionBodyHasIfStatement(withJSXElementFunctionNode)) {
+      const scopeBodys: any[] = [];
+      let scopeReturnStatement = null;
+      if (t.isBlockStatement(functionDeclarationBodyAst)) {
+        for (let bodyStatementAst of functionDeclarationBodyAst.body) {
+          if (t.isReturnStatement(bodyStatementAst)) {
+            scopeReturnStatement = bodyStatementAst;
+            scopeBodys.push(t.returnStatement(t.booleanLiteral(true)));
+          } else {
+            scopeBodys.push(bodyStatementAst);
+          }
+        }
+      }
+      if (scopeReturnStatement) {
+        scopedWithJSXElementFunctionAst = t.ifStatement(
+          t.arrowFunctionExpression(
+            [],
+            t.blockStatement(scopeBodys)
+          ),
+          scopeReturnStatement,
+        );
+      }
+    } else { // 如果函数体包含 ifstatement，需要把 ifstatement 的 test 一起放进去，有点复杂
+      if (t.isBlockStatement(withJSXElementFunctionNode.body)) {
+        for (let bodyStatementAst of withJSXElementFunctionNode.body.body) {
+          if (t.isIfStatement(bodyStatementAst)) {
+
+            let currentAlternate = bodyStatementAst;
+
+            while (currentAlternate && t.isIfStatement(currentAlternate)) {
+
+              let currentTest = currentAlternate.test;
+              let currentConsequent = currentAlternate.consequent;
+
+              const scopeBodys: any[] = [];
+              let scopeReturnStatement = null;
+              if (t.isBlockStatement(currentConsequent)) {
+                for (let bodyStatementAst of currentConsequent.body) {
+                  if (t.isReturnStatement(bodyStatementAst)) {
+                    scopeReturnStatement = bodyStatementAst;
+                    scopeBodys.push(t.returnStatement(t.booleanLiteral(true)));
+                  } else {
+                    scopeBodys.push(bodyStatementAst);
+                  }
+                }
+              }
+              if (scopeReturnStatement) {
+                set(currentAlternate, 'test', t.logicalExpression('&&', currentTest, t.arrowFunctionExpression(
+                  [],
+                  t.blockStatement(scopeBodys)
+                )));
+                set(currentAlternate, 'consequent', scopeReturnStatement);
+              }
+              currentAlternate = currentAlternate.alternate as any;
+            }
+          }
+        }
+      }
+    }
+    return scopedWithJSXElementFunctionAst;
+  }
+
+  /// 给所有包含 JSXElement 的函数包上 if statement
+  exportDefaultComponentAst.traverse({
+    enter(path: t.NodePath<any>) {
+      if (t.isFunctionReturnStatement({ // 调过组件函数本身的 return
+        functionAstNode: exportDefaultComponentAst.node,
+        returnStatementPath: path,
+      })) {
+        path.skip();
+      }
+      if (!t.hasJSX(path.node)) {
+        path.skip();
+      }
+    },
+    FunctionDeclaration(path: t.NodePath<t.FunctionDeclaration>) {
+      if (t.hasJSX(path.node)) {
+        const scopedWithJSXElementFunctionAst = getWrapperedWithJSXElementFunction(path);
+        if (scopedWithJSXElementFunctionAst) {
+          path.replaceWith(t.functionDeclaration(path.node.id, path.node.params, t.blockStatement([scopedWithJSXElementFunctionAst])));
+        }
+      }
+    },
+    ArrowFunctionExpression(path: t.NodePath<t.ArrowFunctionExpression>) {
+      if (t.hasJSX(path.node)) {
+        const scopedWithJSXElementFunctionAst = getWrapperedWithJSXElementFunction(path);
+        if (scopedWithJSXElementFunctionAst) {
+          path.replaceWith(t.arrowFunctionExpression(path.node.params, t.blockStatement([scopedWithJSXElementFunctionAst])));
+        }
+      }
+    },
+    FunctionExpression(path: t.NodePath<t.FunctionExpression>) {
+      if (t.hasJSX(path.node)) {
+        const scopedWithJSXElementFunctionAst = getWrapperedWithJSXElementFunction(path);
+        if (scopedWithJSXElementFunctionAst) {
+          path.replaceWith(t.functionExpression(path.node.id, path.node.params, t.blockStatement([scopedWithJSXElementFunctionAst])));
+        }
+      }
+    },
+  });
+
   console.log(generator(exportDefaultComponentAst.node).code);
 
   const withJSXVariableDeclarations: any[] = [];
@@ -223,157 +354,7 @@ function getExportDefaultComponentTemplate({
 }
 
 
-function updateWithJSXElementFunctionScope({
-  componentScope,
-  withJSXElementFunctionPath,
-  globalPositionPath,
-}: {
-  componentScope: t.Scope,
-  withJSXElementFunctionPath: t.NodePath<t.FunctionDeclaration> | t.NodePath<t.ArrowFunctionExpression> | t.NodePath<t.FunctionExpression>,
-  globalPositionPath: t.NodePath<any> | null,
-}) : void {
-  const currentScope = withJSXElementFunctionPath.scope;
-  const withJSXElementFunctionNode = withJSXElementFunctionPath.node;
-  const functionDeclarationBodyAst = withJSXElementFunctionNode.body;
-  updateWithJSXElementStatement({
-    componentScope,
-    currentScope,
-    statementAst: functionDeclarationBodyAst,
-    globalPositionPath,
-  })
-}
 
-function updateWithJSXElementStatement({
-  componentScope,
-  currentScope,
-  statementAst,
-  globalPositionPath,
-}: {
-  componentScope: t.Scope,
-  currentScope: t.Scope,
-  statementAst: t.BlockStatement | t.Expression | t.Statement,
-  globalPositionPath: t.NodePath<any> | null,
-}) {
-  let scopedDeclarations: t.Node[] = [];
-  // 重命名作用域内变量
-  if (t.isBlockStatement(statementAst)) {
-    let index = 0;
-    for (let bodyStatementAst of statementAst.body) {
-      debugger;
-      if (t.isVariableDeclaration(bodyStatementAst)) {
-        let declarations: any = [];
-        let expressions = []
-        for (let variableDeclarator of bodyStatementAst.declarations) {
-          const declaratorName = get(variableDeclarator, 'id.name');
-          const declaratorInit = get(variableDeclarator, 'init');
-          if (declaratorName) {
-            // 把作用域内的变量重命名
-            const scopedDeclaratorName = componentScope.generateUidIdentifier(declaratorName);
-            currentScope.rename(declaratorName, scopedDeclaratorName.name);
-            // 如果定义的内容里还包含 JSXElement， 直接提取到全局
-            if (declaratorInit && t.hasJSX(declaratorInit)) {
-              // 补上一个空 statement，避免迭代出现混乱
-              expressions.push(t.emptyStatement());
-              declarations.push(set(variableDeclarator, 'init', declaratorInit));
-            } else if (declaratorInit) { // 如果不包含 JSXElement，把作用域内的变量定义改成变量复制，把变量定义提取到全局
-              // 局部变量赋值
-              expressions.push(t.expressionStatement(
-                t.assignmentExpression('=', t.identifier(scopedDeclaratorName.name), declaratorInit))
-              );
-              // 全局变量定义
-              declarations.push(set(variableDeclarator, 'init', null));
-            }
-          }
-        }
-        // 删掉 variableDeclaration 节点，替换成 expressions
-        statementAst.body.splice(index, 1, ...expressions);
-        // 该变量需要提到全局
-        scopedDeclarations.push(t.variableDeclaration('let', declarations));
-
-      } else if (t.isIfStatement(bodyStatementAst)) { // 如果是 if statement 要遍历每个 if 项，有点复杂了
-        updateWithJSXElementStatement({
-          componentScope,
-          currentScope,
-          statementAst: bodyStatementAst.consequent,
-          globalPositionPath,
-        });
-
-        let currentAlternate = bodyStatementAst.alternate;
-        while (currentAlternate && t.isIfStatement(currentAlternate)) {
-          if (globalPositionPath) {
-            updateWithJSXElementStatement({
-              componentScope,
-              currentScope,
-              statementAst: currentAlternate.consequent,
-              globalPositionPath,
-            });
-          }
-          currentAlternate = currentAlternate.alternate;
-        }
-      }
-      index += 1;
-    }
-  }
-
-  if (globalPositionPath) {
-    for (let declaration of scopedDeclarations) {
-      globalPositionPath.insertBefore(declaration);
-    }
-  }
-
-}
-
-function hasUnFlattenJSXElementFunctions(componentAst: t.NodePath<any>): boolean {
-  let hasUnFlattenJSXElementFunctionsFlag = false;
-  const judgement = (path: t.NodePath<any>) => {
-    if (t.hasJSX(path.node)) {
-      const functionDeclarationBodyAst = path.node.body;
-      // 重命名作用域内变量
-      if (t.isBlockStatement(functionDeclarationBodyAst)) {
-        for (let bodyStatementAst of functionDeclarationBodyAst.body) {
-          if (t.isVariableDeclaration(bodyStatementAst)) {
-            for (let variableDeclarator of bodyStatementAst.declarations) {
-              const declaratorName = get(variableDeclarator, 'id.name');
-              const declaratorInit = get(variableDeclarator, 'init');
-              if (declaratorName) {
-                if (declaratorInit && t.hasJSX(declaratorInit)) {
-                  hasUnFlattenJSXElementFunctionsFlag = true;
-                  break;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  componentAst.traverse({
-    enter(path: t.NodePath<any>) {
-      if (hasUnFlattenJSXElementFunctionsFlag) {
-        path.skip();
-      }
-      if (t.isFunctionReturnStatement({ // 调过组件函数本身的 return
-        functionAstNode: componentAst.node,
-        returnStatementPath: path,
-      })) {
-        path.skip();
-      }
-      if (!t.hasJSX(path.node)) {
-        path.skip();
-      }
-    },
-    FunctionDeclaration(path: t.NodePath<t.FunctionDeclaration>) {
-      judgement(path);
-    },
-    ArrowFunctionExpression(path: t.NodePath<t.ArrowFunctionExpression>) {
-      judgement(path);
-    },
-    FunctionExpression(path: t.NodePath<t.FunctionExpression>) {
-      judgement(path);
-    },
-  });
-  return hasUnFlattenJSXElementFunctionsFlag;
-}
 
 
 function getComponentTemplate({
@@ -447,7 +428,6 @@ function getComponentTemplate({
             const setPathLevels = new Array(level);
             set(bodyStatementAst, setPathLevels.fill('alternate').join('.'), finalALternate);
           }
-          debugger;
           return transformSvelteTemplate({
             node: bodyStatementAst,
             variableDeclarations,

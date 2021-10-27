@@ -77,6 +77,25 @@ function Example(props) {
   }
 
 
+  const renderLabel = (props) => {
+    const { labelInfo, deleteLabel } = props;
+    const { count, isAll, hasMore, showLabels } = labelInfo;
+    return (
+      <span>
+        {!isAll &&
+          showLabels.map((key) => {
+            return (
+              <span className="chosen-label" onClick={() => deleteLabel(key)} key={key}>
+                {key} <CloseOutlined style={{ marginLeft: 3, fontSize: 12 }} />
+              </span>
+            );
+          })}
+        {!isAll && hasMore && <span>{`等${count}个`}</span>}
+      </span>
+    );
+  };
+
+
 
   return (
     <div>
@@ -84,7 +103,7 @@ function Example(props) {
       <CC />
       <foo />
     	{ a }
-      {/* <div>{ content() }</div> */}
+      <div>{ content() }</div>
       <input
         css={{
           color: "red",
@@ -94,6 +113,7 @@ function Example(props) {
       />
       w
       { `Hello World! ${props.title}` }
+      { renderLabel() }
       {
 	      comments.map((comment, index) => {
           let content = comment;
