@@ -628,7 +628,15 @@ function transformSvelteTemplate({
     return generator(node).code
   } else if (t.isConditionalExpression(node) || t.isIfStatement(node)) {
     let str = `{#if ${generator(node.test).code}}`;
-    let childrenJSXElement = t.isReturnStatement(node.consequent) ? get(node.consequent, 'argument') : node.consequent as any;
+    let childrenJSXElement: any = node.consequent;
+    if (t.isReturnStatement(node.consequent)) {
+      let argument = get(node.consequent, 'argument');
+      if (argument && t.isCallExpression(argument)) {
+        childrenJSXElement = t.jSXExpressionContainer(argument);
+      } else if (argument) {
+        childrenJSXElement = argument;
+      }
+    }
     str += transformSvelteTemplate({
       node: childrenJSXElement,
       variableDeclarations,

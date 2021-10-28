@@ -86,7 +86,7 @@ function Example(props) {
           showLabels.map((key) => {
             return (
               <span className="chosen-label" onClick={() => deleteLabel(key)} key={key}>
-                {key} <CloseOutlined style={{ marginLeft: 3, fontSize: 12 }} />
+                {key} <span style={{ marginLeft: 3, fontSize: 12 }} ></span>
               </span>
             );
           })}
