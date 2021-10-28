@@ -27,7 +27,6 @@ export function updateWithJSXElementStatement({
           if (declaratorName) {
             // 把作用域内的变量重命名
             const scopedDeclaratorName = componentScope.generateUidIdentifier(declaratorName);
-            debugger;
             currentScope.rename(declaratorName, scopedDeclaratorName.name);
             // 如果定义的内容里还包含 JSXElement， 直接提取到全局
             if (declaratorInit && t.hasJSX(declaratorInit)) {

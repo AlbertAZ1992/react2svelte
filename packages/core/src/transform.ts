@@ -404,7 +404,7 @@ function getComponentTemplate({
             functionDeclarations,
             scriptAsts,
             blockInfo: {},
-          })
+          });
 
 
         } else if (t.isIfStatement(bodyStatementAst)) {
@@ -434,7 +434,7 @@ function getComponentTemplate({
             functionDeclarations,
             scriptAsts,
             blockInfo: {},
-          })
+          });
         }
       }
       return '';
@@ -534,7 +534,7 @@ function transformSvelteTemplate({
     return str;
   } else if (t.isJSXText(node)) { // 转换成注释
     return node.value || '';
-  } else if (t.isJSXExpressionContainer(node)) {
+  } else if (t.isJSXExpressionContainer(node)) { // 函数表达式
 
     if (t.isCallExpression(node.expression)) { // 变量或函数调用
       const callName = get(node.expression, 'callee.name');
@@ -594,6 +594,26 @@ function transformSvelteTemplate({
       return str;
 
     }
+    debugger;
+    if (t.isLogicalExpression(node.expression)) { // 逻辑表达式
+      debugger;
+      if (get(node.expression, 'operator') === '&&') { // || 渲染 JSXElement 的情况应该不会出现
+        let nodeAst = t.ifStatement(
+          t.arrowFunctionExpression(
+            [],
+            node.expression.left
+          ),
+          t.returnStatement(node.expression.right),
+        );
+        return transformSvelteTemplate({
+          node: nodeAst,
+          variableDeclarations,
+          functionDeclarations,
+          scriptAsts,
+          blockInfo: {},
+        });
+      }
+    }
 
     if (t.hasJSX(node)) {
       return transformSvelteTemplate({
@@ -608,8 +628,9 @@ function transformSvelteTemplate({
     return generator(node).code
   } else if (t.isConditionalExpression(node) || t.isIfStatement(node)) {
     let str = `{#if ${generator(node.test).code}}`;
+    let childrenJSXElement = t.isReturnStatement(node.consequent) ? get(node.consequent, 'argument') : node.consequent as any;
     str += transformSvelteTemplate({
-      node: node.consequent,
+      node: childrenJSXElement,
       variableDeclarations,
       functionDeclarations,
       scriptAsts,

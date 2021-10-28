@@ -99,20 +99,6 @@ function Example(props) {
 
   return (
     <div>
-      nihao <span>ssss</span>
-      <CC />
-      <foo />
-    	{ a }
-      <div>{ content() }</div>
-      <input
-        css={{
-          color: "red",
-        }}
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-      />
-      w
-      { `Hello World! ${props.title}` }
       { renderLabel() }
       {
 	      comments.map((comment, index) => {
