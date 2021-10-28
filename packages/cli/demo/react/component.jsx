@@ -1,12 +1,7 @@
 
-import React, { useState } from 'react';
-
-const e = () => {}
+import React from 'react';
 
 function Example(props) {
-
-
-  const [ name, setName ] = useState('test');
 
   const a = 1;
 
@@ -76,10 +71,22 @@ function Example(props) {
     return <div>{c}</div>
   }
 
+  const deleteLabel = (key) => {
+    console.log(key);
+  }
 
-  const renderLabel = (props) => {
-    const { labelInfo, deleteLabel } = props;
-    const { count, isAll, hasMore, showLabels } = labelInfo;
+
+
+  const renderLabel = () => {
+    const labelInfo = {};
+    const {
+      count: { test },
+      isAll: _isALL,
+      hasMore,
+      showLabels,
+      ...args
+    } = labelInfo;
+    console.log(args);
     return (
       <span>
         {!isAll &&
@@ -90,7 +97,7 @@ function Example(props) {
               </span>
             );
           })}
-        {!isAll && hasMore && <span>{`等${count}个`}</span>}
+        {!isAll && hasMore && test && <span>{`等${count}个`}</span>}
       </span>
     );
   };
@@ -99,6 +106,20 @@ function Example(props) {
 
   return (
     <div>
+      nihao <span>ssss</span>
+      <CC />
+      <foo />
+    	{ a }
+      <div>{ content() }</div>
+      <input
+        css={{
+          color: "red",
+        }}
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+      />
+      w
+      { `Hello World! ${props.title}` }
       { renderLabel() }
       {
 	      comments.map((comment, index) => {
@@ -110,9 +131,6 @@ function Example(props) {
       }
     </div>
   );
-}
-
-const fn = function () {
 }
 
 export const Component = Example;

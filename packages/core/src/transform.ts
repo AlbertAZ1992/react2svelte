@@ -324,22 +324,23 @@ function getExportDefaultComponentTemplate({
   const { body, params } = node;
   // const param = params ? params[0] : null;
 
+
   if (t.isBlockStatement(body)) {
     for (let bodyStatementAst of body.body) {
       if (t.isVariableDeclaration(bodyStatementAst)) {
         if (t.hasJSX(bodyStatementAst)) {
           withJSXVariableDeclarations.push(bodyStatementAst);
         }
-        // else {
-        //   scriptAsts.push(bodyStatementAst);
-        // }
+        else {
+          scriptAsts.push(bodyStatementAst);
+        }
       } else if (t.isFunctionDeclaration(bodyStatementAst)) {
         if (t.hasJSX(bodyStatementAst)) {
           withJSXFunctionDeclarations.push(bodyStatementAst);
         }
-        // else {
-        //   scriptAsts.push(bodyStatementAst);
-        // }
+        else {
+          scriptAsts.push(bodyStatementAst);
+        }
       }
     }
   }
@@ -594,9 +595,7 @@ function transformSvelteTemplate({
       return str;
 
     }
-    debugger;
     if (t.isLogicalExpression(node.expression)) { // 逻辑表达式
-      debugger;
       if (get(node.expression, 'operator') === '&&') { // || 渲染 JSXElement 的情况应该不会出现
         let nodeAst = t.ifStatement(
           t.arrowFunctionExpression(
