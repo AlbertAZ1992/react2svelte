@@ -21,9 +21,7 @@
     "info": "yarn workspaces info",
     "clean": "yarn workspaces run clean",
     "clean:modules": "rimraf node_modules",
-    "clean:lerna": "lerna clean && lerna clean -y",
-    "autoPublish": "lerna publish --conventional-commits -y",
-    "version": "lerna version --conventional-commits -y"
+    "clean:lerna": "lerna clean && lerna clean -y"
   },
   "config": {
     "commitizen": {
