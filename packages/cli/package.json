@@ -14,6 +14,10 @@
     "commander": "^7.2.0",
     "rimraf": "^3.0.2"
   },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "scripts": {
     "dev": "node ./bin/r2s trans -s ./demo/react/component.jsx -d ./demo/svelte/component.svelte"
   },
@@ -28,5 +32,5 @@
   "engines": {
     "node": ">=10.0.0"
   },
-  "gitHead": "8041dd7ff6b9c1db3e15e6d558d2c81397b208b1"
+  "gitHead": "73546edab44b3a858d40cf4d4cd8aae6fc9fc3d2"
 }

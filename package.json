@@ -4,10 +4,6 @@
   "workspaces": [
     "packages/*"
   ],
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/",
-    "access": "public"
-  },
   "version": "1.0.0",
   "main": "index.js",
   "author": "Albert Zhang (https://github.com/AlbertAZ1992)",
