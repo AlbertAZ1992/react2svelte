@@ -352,6 +352,8 @@ function getExportDefaultComponentTemplate({
         else {
           scriptAsts.push(bodyStatementAst);
         }
+      } else if (!t.hasJSX(bodyStatementAst)) {
+        scriptAsts.push(bodyStatementAst);
       }
     }
   }

@@ -10,6 +10,8 @@ function Example(props) {
   const b = 2;
 
   const c = 3;
+
+  let showLabels = 111;
   // const c = <div>1234</div>;
 
   const d = a === 1 ? <div>xx</div> : <span>2</span>;
@@ -85,10 +87,10 @@ function Example(props) {
       count: {}
     };
     const {
-      count: { test },
+      count,
       isAll: _isALL,
       hasMore,
-      showLabels,
+      showLabels = [],
       ...args
     } = labelInfo;
     console.log(args);

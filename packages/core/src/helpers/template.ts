@@ -27,6 +27,14 @@ export function updateWithJSXElementStatement({
           }
         } else if (t.isObjectPattern(property.value)) {
           updateObjectPatternProperty(property.value);
+        } else if (t.isAssignmentPattern(property.value)) {
+          let declaratorName = get(property.value, 'left.name');
+          if (declaratorName) {
+            // 把作用域内的变量重命名
+            const scopedDeclaratorName = componentScope.generateUidIdentifier(declaratorName);
+            currentScope.rename(declaratorName, scopedDeclaratorName.name);
+            // set(property, 'value', t.identifier()
+          }
         }
       } else if (t.isRestElement(property)) {
         let args = property.argument;
@@ -41,13 +49,15 @@ export function updateWithJSXElementStatement({
   }
 
   let scopedDeclarations: t.Node[] = [];
+  let scopedLabelStatements: any[] = [];
   // 重命名作用域内变量
   if (t.isBlockStatement(statementAst)) {
     let index = 0;
     for (let bodyStatementAst of statementAst.body) {
       if (t.isVariableDeclaration(bodyStatementAst)) {
-        let declarations: any = [];
-        let expressions = []
+        let declarations: any[] = [];
+
+        let expressions: any[] = []
         for (let variableDeclarator of bodyStatementAst.declarations) {
           if (t.isIdentifier(variableDeclarator.id)) {
             const declaratorName = get(variableDeclarator, 'id.name');
@@ -70,10 +80,14 @@ export function updateWithJSXElementStatement({
                 declarations.push(set(variableDeclarator, 'init', null));
               }
             }
-          } else if (t.isObjectPattern(variableDeclarator.id)) { // 通常都是取值定义，不需要赋值，如果有奇特写法再说
+          } else if (t.isObjectPattern(variableDeclarator.id) && variableDeclarator.init) { // 通常都是取值定义，如果有奇特写法再说
             updateObjectPatternProperty(variableDeclarator.id);
-            const declaratorInit = get(variableDeclarator, 'init');
-            declarations.push(set(variableDeclarator, 'init', declaratorInit));
+            const updatedObjectPattern = variableDeclarator.id;
+            const labelStatement = t.labeledStatement(t.identifier('$'),
+              t.expressionStatement(
+                t.assignmentExpression('=', updatedObjectPattern, t.logicalExpression('||', variableDeclarator.init, t.objectExpression([])))
+              ));
+              scopedLabelStatements.push(labelStatement);
           }
         }
         // 删掉 variableDeclaration 节点，替换成 expressions
@@ -112,6 +126,9 @@ export function updateWithJSXElementStatement({
   if (globalPositionPath) {
     for (let declaration of scopedDeclarations) {
       globalPositionPath.insertBefore(declaration);
+    }
+    for (let labelStatement of scopedLabelStatements) {
+      globalPositionPath.insertBefore(labelStatement);
     }
   }
 

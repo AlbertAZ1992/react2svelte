@@ -2,7 +2,8 @@
   let title = 'hi';
   let a = 1;
   let b = 2;
-  let c = 3; // const c = <div>1234</div>;
+  let c = 3;
+  let showLabels = 111; // const c = <div>1234</div>;
 
   let comments = [1, 2, 3];
 
@@ -30,13 +31,13 @@
 
   let _labelInfo;
 
-  let {
-    count: { test: _test },
+  $: ({
+    count: _count,
     isAll: _isALL2,
     hasMore: _hasMore,
-    showLabels: _showLabels,
+    showLabels: _showLabels = [],
     ..._args
-  } = _labelInfo;
+  } = _labelInfo || {});
 </script>
 
 <div>
@@ -82,7 +83,7 @@
           }}<span class="chosen-label" on:click="{() => deleteLabel(key)}">
               {key} <span style="margin-left:3;font-size:12"></span>
             </span>{/if}{/each}{/if}
-      {#if () => !_isALL2 && _hasMore && _test}<span>等个</span>{/if}
+      {#if () => !_isALL2 && _hasMore && test}<span>等个</span>{/if}
     </span>{/if}
   {#each comments as comment, index}}{#if () => {
       _ssssss = 7;
