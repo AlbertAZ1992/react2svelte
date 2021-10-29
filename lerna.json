@@ -1,16 +1,23 @@
 {
-  "version": "0.0.0",
+  "version": "1.1.0",
   "npmClient": "yarn",
   "packages": [
     "packages/*"
   ],
   "command": {
     "version": {
-      "ignoreChanges": ["*.md", "**/*.test.ts", "**/*.spec.ts"],
+      "ignoreChanges": [
+        "*.md",
+        "**/*.test.ts",
+        "**/*.spec.ts"
+      ],
       "message": "chore(release version %v): publish"
     },
     "bootstrap": {
-      "npmClientArgs": ["--no-package-lock", "--no-ci"]
+      "npmClientArgs": [
+        "--no-package-lock",
+        "--no-ci"
+      ]
     }
   },
   "changelog": {
