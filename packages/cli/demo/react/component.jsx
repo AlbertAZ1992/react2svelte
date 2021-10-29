@@ -3,11 +3,14 @@ import React from 'react';
 
 function Example(props) {
 
+  const title = 'hi';
+
   const a = 1;
 
   const b = 2;
 
-  const c = <div>1234</div>;
+  const c = 3;
+  // const c = <div>1234</div>;
 
   const d = a === 1 ? <div>xx</div> : <span>2</span>;
 
@@ -19,22 +22,22 @@ function Example(props) {
     let ssssss = 7
 
     const render = () => {
-      let ttt = 2 * ssssss;
+      let ttt = b * ssssss;
 
-      const render = () => {
+      const render2 = () => {
         let ttt = 4 * ssssss;
 
         return <div>{ttt}</div>;
       };
 
-      return <div><div>ttt</div>{ render() }</div>;
+      return <div><div>{ttt}</div>{ render2() }</div>;
     };
 
     let aaa = a * 3;
   	return aaa === 2 ? render() : <div style={{ width: 120, height: 200 }}>hi</div>
   }
 
-  const foo = () => {
+  const Foo = () => {
     if (() => { return true }) {
 
     	return <div>hisss</div>
@@ -43,25 +46,25 @@ function Example(props) {
   }
 
   const content = () => {
-    let c = 1
-    if (a === 4) {
+    let a = 1
+    if (c === 4) {
       a += 2
       return <div>{a}</div>
-    } else if (a === 1) {
+    } else if (c === 1) {
       let name = 5
     	return name;
-    } else if (a === 3) {
+    } else if (c === 3) {
 
       const render = () => {
-        let ttt = 2 * ssssss;
+        let ttt = b * ssssss;
 
-        const render = () => {
+        const render2 = () => {
           let ttt = 4 * ssssss;
 
           return <div>{ttt}</div>;
         };
 
-        return <div><div>ttt</div>{ render() }</div>;
+        return <div><div>{ttt}</div>{ render2() }</div>;
       };
 
       let aaa = a * 3;
@@ -78,7 +81,9 @@ function Example(props) {
 
 
   const renderLabel = () => {
-    const labelInfo = {};
+    const labelInfo = {
+      count: {}
+    };
     const {
       count: { test },
       isAll: _isALL,
@@ -89,7 +94,7 @@ function Example(props) {
     console.log(args);
     return (
       <span>
-        {!isAll &&
+        {!_isALL && d &&
           showLabels.map((key) => {
             return (
               <span className="chosen-label" onClick={() => deleteLabel(key)} key={key}>
@@ -97,7 +102,7 @@ function Example(props) {
               </span>
             );
           })}
-        {!isAll && hasMore && test && <span>{`等${count}个`}</span>}
+        {!_isALL && hasMore && test && <span>{`等${count}个`}</span>}
       </span>
     );
   };
@@ -106,20 +111,20 @@ function Example(props) {
 
   return (
     <div>
-      nihao <span>ssss</span>
+      <span>nihao</span> <span>ssss</span>
       <CC />
-      <foo />
+      <Foo />
     	{ a }
       <div>{ content() }</div>
       <input
         css={{
           color: "red",
         }}
-        value={name}
+        value={a}
         onChange={(event) => setName(event.target.value)}
       />
       w
-      { `Hello World! ${props.title}` }
+      { `Hello World! ${title}` }
       { renderLabel() }
       {
 	      comments.map((comment, index) => {
@@ -135,6 +140,4 @@ function Example(props) {
 
 export const Component = Example;
 
-//export default function c() {
-//}
 export default Example;

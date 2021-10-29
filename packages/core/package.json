@@ -27,12 +27,10 @@
   "dependencies": {
     "@babel/core": "^7.15.0",
     "@babel/generator": "^7.15.0",
-    "@babel/plugin-syntax-decorators": "^7.14.5",
-    "@babel/plugin-syntax-jsx": "^7.14.5",
-    "@babel/preset-typescript": "^7.15.0",
     "@babel/types": "^7.15.0",
     "lodash": "^4.17.21",
-    "rimraf": "^3.0.2",
+    "prettier": "2.0.0",
+    "prettier-plugin-svelte": "^2.4.0",
     "svelte": "^3.42.4",
     "traverse": "^0.6.6"
   },
@@ -42,7 +40,6 @@
     "@types/babel__core": "^7.1.15",
     "@types/lodash": "^4.14.172",
     "@types/node": "^16.7.6",
-    "@types/rimraf": "^3.0.2",
     "@types/traverse": "^0.6.32",
     "tslint": "^5.17.0",
     "tslint-config-prettier": "^1.18.0",

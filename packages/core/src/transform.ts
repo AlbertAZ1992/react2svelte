@@ -1,4 +1,6 @@
 import generator from '@babel/generator';
+import prettier from 'prettier';
+import * as prettierSvelte from 'prettier-plugin-svelte';
 import * as babelParser from '@babel/parser';
 import get from 'lodash/get';
 import set from 'lodash/set';
@@ -51,8 +53,8 @@ export function generateR2SCode({
     scriptAsts,
   })
 
-  console.log('componentTemplate', componentTemplate);
-  console.log('scriptAsts', scriptAsts);
+  // console.log('componentTemplate', componentTemplate);
+  // console.log('scriptAsts', scriptAsts);
 
   const scriptProgramBodyAst: any[] = [];
   for (let scriptAst of scriptAsts) {
@@ -69,7 +71,16 @@ export function generateR2SCode({
 
   const svelteCode = '<script>\n' + componentScriptCode + '\n</script>\n' + componentTemplate;
 
-  return svelteCode;
+  return prettier.format(svelteCode, {
+    parser: 'svelte',
+    plugins: [prettierSvelte],
+    svelteSortOrder: 'options-styles-scripts-markup',
+    svelteStrictMode: true,
+    svelteBracketNewLine: true,
+    svelteAllowShorthand: true,
+    svelteIndentScriptAndStyle: true,
+    singleQuote: true,
+  });
 }
 
 function getAllDeclarations(ast: t.Node): any {

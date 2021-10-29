@@ -9,11 +9,10 @@
     "r2s": "./bin/r2s"
   },
   "dependencies": {
+    "@r2s/core": "*",
     "chalk": "^4.1.1",
     "commander": "^7.2.0",
-    "lodash": "^4.17.21",
-    "rimraf": "^3.0.2",
-    "@r2s/core": "*"
+    "rimraf": "^3.0.2"
   },
   "scripts": {
     "dev": "node ./bin/r2s trans -s ./demo/react/component.jsx -d ./demo/svelte/component.svelte"
