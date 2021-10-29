@@ -1,6 +1,6 @@
 {
-  "name": "@r2s/core",
-  "version": "1.1.4-alpha.0",
+  "name": "@albertaz/r2s-core",
+  "version": "1.0.0",
   "description": "react to svelte core",
   "author": "Albert Zhang (https://github.com/AlbertAZ1992)",
   "homepage": "",
@@ -53,5 +53,5 @@
   "files": [
     "lib"
   ],
-  "gitHead": "73546edab44b3a858d40cf4d4cd8aae6fc9fc3d2"
+  "gitHead": "4dd1f94b5c7d0d5f666b8018a5ac11edeb11410d"
 }
