@@ -54,9 +54,9 @@ function Example(props) {
       return <div>{a}</div>
     } else if (c === 1) {
       let name = 5
-    	return name;
+    	return <span>{name}</span>;
     } else if (c === 3) {
-
+      let ssssss = 7;
       const render = () => {
         let ttt = b * ssssss;
 
@@ -104,7 +104,7 @@ function Example(props) {
               </span>
             );
           })}
-        {!_isALL && hasMore && test && <span>{`等${count}个`}</span>}
+        {!_isALL && hasMore && <span>{`等${count}个`}</span>}
       </span>
     );
   };
@@ -123,7 +123,7 @@ function Example(props) {
           color: "red",
         }}
         value={a}
-        onChange={(event) => setName(event.target.value)}
+        onChange={(event) => console.log(event.target.value)}
       />
       w
       { `Hello World! ${title}` }

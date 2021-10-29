@@ -139,7 +139,6 @@ export function hasUnFlattenJSXElementFunctions(componentAst: t.NodePath<any>): 
   const judgement = (path: t.NodePath<any>) => {
     if (t.hasJSX(path.node)) {
       const functionDeclarationBodyAst = path.node.body;
-      // 重命名作用域内变量
       if (t.isBlockStatement(functionDeclarationBodyAst)) {
         for (let bodyStatementAst of functionDeclarationBodyAst.body) {
           if (t.isVariableDeclaration(bodyStatementAst)) {

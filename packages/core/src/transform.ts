@@ -1,10 +1,8 @@
 import generator from '@babel/generator';
 import prettier from 'prettier';
 import * as prettierSvelte from 'prettier-plugin-svelte';
-import * as babelParser from '@babel/parser';
 import get from 'lodash/get';
 import set from 'lodash/set';
-import * as svelteCompiler from 'svelte/compiler';
 import * as t from './helpers/ast';
 import isHtmlTag from './helpers/is-html-tag';
 import templateStyle from './helpers/template-style';
@@ -327,7 +325,7 @@ function getExportDefaultComponentTemplate({
     },
   });
 
-  console.log(generator(exportDefaultComponentAst.node).code);
+  // console.log(generator(exportDefaultComponentAst.node).code);
 
   const withJSXVariableDeclarations: any[] = [];
   const withJSXFunctionDeclarations: any[] = [];
@@ -361,8 +359,8 @@ function getExportDefaultComponentTemplate({
   // 开始转换
   return getComponentTemplate({
     componentAst: exportDefaultComponentAst.node,
-    variableDeclarations: withJSXVariableDeclarations,
-    functionDeclarations: withJSXFunctionDeclarations,
+    withJSXVariableDeclarations: withJSXVariableDeclarations,
+    withJSXFunctionDeclarations: withJSXFunctionDeclarations,
     scriptAsts,
   });
 }
@@ -373,13 +371,13 @@ function getExportDefaultComponentTemplate({
 
 function getComponentTemplate({
   componentAst,
-  variableDeclarations,
-  functionDeclarations,
+  withJSXVariableDeclarations,
+  withJSXFunctionDeclarations,
   scriptAsts,
 } : {
   componentAst: t.Node,
-  variableDeclarations: any[],
-  functionDeclarations: any[],
+  withJSXVariableDeclarations: any[],
+  withJSXFunctionDeclarations: any[],
   scriptAsts: t.Node[]
 }): string {
 
@@ -389,8 +387,8 @@ function getComponentTemplate({
     if (declarationInitAst) {
       return transformSvelteTemplate({
         node: declarationInitAst,
-        variableDeclarations,
-        functionDeclarations,
+        withJSXVariableDeclarations,
+        withJSXFunctionDeclarations,
         scriptAsts,
         blockInfo: {},
       })
@@ -414,8 +412,8 @@ function getComponentTemplate({
 
           return transformSvelteTemplate({
             node: templateAst,
-            variableDeclarations,
-            functionDeclarations,
+            withJSXVariableDeclarations,
+            withJSXFunctionDeclarations,
             scriptAsts,
             blockInfo: {},
           });
@@ -444,8 +442,8 @@ function getComponentTemplate({
           }
           return transformSvelteTemplate({
             node: bodyStatementAst,
-            variableDeclarations,
-            functionDeclarations,
+            withJSXVariableDeclarations,
+            withJSXFunctionDeclarations,
             scriptAsts,
             blockInfo: {},
           });
@@ -461,14 +459,14 @@ function getComponentTemplate({
 
 function transformSvelteTemplate({
   node,
-  variableDeclarations,
-  functionDeclarations,
+  withJSXVariableDeclarations,
+  withJSXFunctionDeclarations,
   scriptAsts,
   blockInfo,
 } : {
   node: t.Node,
-  variableDeclarations: any[],
-  functionDeclarations: any[],
+  withJSXVariableDeclarations: any[],
+  withJSXFunctionDeclarations: any[],
   scriptAsts: t.Node[],
   blockInfo: any
 }): string {
@@ -481,13 +479,13 @@ function transformSvelteTemplate({
 
       let tagComponentAst = null;
 
-      for (let functionDeclaration of functionDeclarations) {
+      for (let functionDeclaration of withJSXFunctionDeclarations) {
         if (get(functionDeclaration, 'id.name') === tagName) {
           tagComponentAst = functionDeclaration;
         }
       }
 
-      for (let variableDeclaration of variableDeclarations) {
+      for (let variableDeclaration of withJSXVariableDeclarations) {
         for (let declaration of variableDeclaration.declarations) {
           if (get(declaration, 'id.name') === tagName) {
             tagComponentAst = declaration.init;
@@ -498,8 +496,8 @@ function transformSvelteTemplate({
 
       return getComponentTemplate({
         componentAst: tagComponentAst,
-        variableDeclarations,
-        functionDeclarations,
+        withJSXVariableDeclarations,
+        withJSXFunctionDeclarations,
         scriptAsts,
       });
     }
@@ -536,8 +534,8 @@ function transformSvelteTemplate({
       str += '>';
       str += node.children.map((el) => transformSvelteTemplate({
         node: el,
-        variableDeclarations,
-        functionDeclarations,
+        withJSXVariableDeclarations,
+        withJSXFunctionDeclarations,
         scriptAsts,
         blockInfo: {},
       })).join('');
@@ -554,13 +552,13 @@ function transformSvelteTemplate({
       const callName = get(node.expression, 'callee.name');
       if (callName) { // 直接调用函数或变量
         let callComponentAst = null;
-        for (let functionDeclaration of functionDeclarations) {
+        for (let functionDeclaration of withJSXFunctionDeclarations) {
           if (get(functionDeclaration, 'id.name') === callName) {
             callComponentAst = functionDeclaration;
           }
         }
 
-        for (let variableDeclaration of variableDeclarations) {
+        for (let variableDeclaration of withJSXVariableDeclarations) {
           for (let declaration of variableDeclaration.declarations) {
             if (get(declaration, 'id.name') === callName) {
               callComponentAst = declaration.init;
@@ -570,21 +568,22 @@ function transformSvelteTemplate({
 
         return getComponentTemplate({
           componentAst: callComponentAst,
-          variableDeclarations,
-          functionDeclarations,
+          withJSXVariableDeclarations,
+          withJSXFunctionDeclarations,
           scriptAsts,
         });
       } else if (t.isMapCallExpression(node.expression)) { // map 函数
         const callback = node.expression.arguments[0];
         const callbackParams = get(callback, 'params') || [];
         const calleeNode = get(node.expression, 'callee.object');
-        let str = `{#each ${generator(calleeNode).code} as ${callbackParams.map((p: any) => p.name).join(', ')}}`;
-        str += `}${getComponentTemplate({
+        let str = `\n{#each ${generator(calleeNode).code} as ${callbackParams.map((p: any) => p.name).join(', ')}}}\n`;
+        str += `${getComponentTemplate({
           componentAst: callback,
-          variableDeclarations,
-          functionDeclarations,
+          withJSXVariableDeclarations,
+          withJSXFunctionDeclarations,
           scriptAsts,
-        })}{/each}`;
+        })}`;
+        str += '\n{/each}\n';
         return str;
       }
     }
@@ -619,8 +618,8 @@ function transformSvelteTemplate({
         );
         return transformSvelteTemplate({
           node: nodeAst,
-          variableDeclarations,
-          functionDeclarations,
+          withJSXVariableDeclarations,
+          withJSXFunctionDeclarations,
           scriptAsts,
           blockInfo: {},
         });
@@ -630,8 +629,8 @@ function transformSvelteTemplate({
     if (t.hasJSX(node)) {
       return transformSvelteTemplate({
         node: node.expression,
-        variableDeclarations,
-        functionDeclarations,
+        withJSXVariableDeclarations,
+        withJSXFunctionDeclarations,
         scriptAsts,
         blockInfo: {},
       });
@@ -639,7 +638,7 @@ function transformSvelteTemplate({
 
     return generator(node).code
   } else if (t.isConditionalExpression(node) || t.isIfStatement(node)) {
-    let str = `{#if ${generator(node.test).code}}`;
+    let str = `\n{#if ${generator(node.test).code}}\n`;
     let childrenJSXElement: any = node.consequent;
     if (t.isReturnStatement(node.consequent)) {
       let argument = get(node.consequent, 'argument');
@@ -648,25 +647,27 @@ function transformSvelteTemplate({
       } else if (argument) {
         childrenJSXElement = argument;
       }
+    } else if (t.isCallExpression(node.consequent)) {
+      childrenJSXElement = t.jSXExpressionContainer(node.consequent);
     }
     str += transformSvelteTemplate({
       node: childrenJSXElement,
-      variableDeclarations,
-      functionDeclarations,
+      withJSXVariableDeclarations,
+      withJSXFunctionDeclarations,
       scriptAsts,
       blockInfo: {},
     });
     if (node.alternate) {
-      str += '{:else}';
+      str += '\n{:else}\n';
       str += transformSvelteTemplate({
         node: node.alternate,
-        variableDeclarations,
-        functionDeclarations,
+        withJSXVariableDeclarations,
+        withJSXFunctionDeclarations,
         scriptAsts,
         blockInfo: {},
       });
     }
-    str += '{/if}';
+    str += '\n{/if}\n';
     return str;
   }
   return '';
