@@ -93,7 +93,6 @@ export function updateWithJSXElementStatement({
         // 删掉 variableDeclaration 节点，替换成 expressions
         statementAst.body.splice(index, 1, ...expressions);
         // 该变量需要提到全局
-        debugger;
         if (declarations.length > 0) {
           scopedDeclarations.push(t.variableDeclaration('let', declarations));
         }

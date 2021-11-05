@@ -7,20 +7,32 @@
 
   let comments = [1, 2, 3];
 
+  let _p;
+
+  let _temp;
+
+  let _p2;
+
+  let _args;
+
   let _ssssss;
 
   let _ttt;
 
-  let _ttt3;
+  let _ttt4;
 
   let _aaa;
+
+  $: ({
+    p1: _p3,
+    p2: _p4 = 1,
+    p3: { p4: _p5, ..._argsp },
+  } = _temp || {});
 
   let name;
   let ssssss;
 
   let _ttt2;
-
-  let _ttt4;
 
   let aaa;
 
@@ -37,7 +49,7 @@
     isAll: _isALL2,
     hasMore: _hasMore,
     showLabels: _showLabels = [],
-    ..._args
+    ..._args2
   } = _labelInfo || {});
 </script>
 
@@ -45,6 +57,7 @@
   <span>nihao</span> <span>ssss</span>
 
   {#if () => {
+    _p2 = 2;
     _ssssss = 7;
     _aaa = a * 3;
     return true;
@@ -57,10 +70,10 @@
         <div>
           <div>{_ttt}</div>
           {#if () => {
-            _ttt3 = 4 * _ssssss;
+            _ttt4 = 4 * _ssssss;
             return true;
           }}
-            <div>{_ttt3}</div>
+            <div>{_ttt4}</div>
           {/if}
         </div>
       {/if}
@@ -102,10 +115,10 @@
           <div>
             <div>{_ttt2}</div>
             {#if () => {
-              _ttt4 = 4 * ssssss;
+              _ttt3 = 4 * ssssss;
               return true;
             }}
-              <div>{_ttt4}</div>
+              <div>{_ttt3}</div>
             {/if}
           </div>
         {/if}
@@ -125,7 +138,7 @@
 
   {#if () => {
     _labelInfo = { count: {} };
-    console.log(_args);
+    console.log(_args2);
     return true;
   }}
     <span>
@@ -151,6 +164,7 @@
   {#each comments as comment, index}}
 
     {#if () => {
+      _p2 = 2;
       _ssssss = 7;
       _aaa = a * 3;
       return true;
@@ -163,10 +177,10 @@
           <div>
             <div>{_ttt}</div>
             {#if () => {
-              _ttt3 = 4 * _ssssss;
+              _ttt4 = 4 * _ssssss;
               return true;
             }}
-              <div>{_ttt3}</div>
+              <div>{_ttt4}</div>
             {/if}
           </div>
         {/if}

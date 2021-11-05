@@ -149,6 +149,79 @@ function getExportDefaultComponentTemplate({
   scriptAsts: t.Node[]
 }): string {
 
+  const updateWithJSXElementFunctionParams = ({
+    componentScope,
+    withJSXElementFunctionPath,
+    globalPositionPath,
+  }: {
+    componentScope: t.Scope,
+    withJSXElementFunctionPath: t.NodePath<t.FunctionDeclaration> | t.NodePath<t.ArrowFunctionExpression> | t.NodePath<t.FunctionExpression>,
+    globalPositionPath: t.NodePath<any> | null,
+  }) => {
+    const currentScope = withJSXElementFunctionPath.scope;
+    const withJSXElementFunctionNode = withJSXElementFunctionPath.node;
+    const paramsAst = withJSXElementFunctionNode.params;
+    const bodyAst = withJSXElementFunctionNode.body;
+    if (paramsAst.length === 0) {
+      return;
+    }
+
+    let scopedDeclarations: t.Node[] = [];
+    let scopedExpressions: any[] = [];
+
+    for (let paramAst of paramsAst) {
+      if (t.isIdentifier(paramAst)) { // 如果是变量定义，可以直接取出
+        const declaratorName = get(paramAst, 'name');
+        if (declaratorName) {
+          // 把作用域内的变量重命名
+          const scopedDeclaratorName = componentScope.generateUidIdentifier(declaratorName);
+          currentScope.rename(declaratorName, scopedDeclaratorName.name);
+          // 全局变量定义
+          scopedDeclarations.push(t.variableDeclaration('let', [t.variableDeclarator(t.identifier(scopedDeclaratorName.name), null)]));
+        }
+      } else if (t.isAssignmentPattern(paramAst)) { // 如果带初始值，提取到全局，同时补上一个赋值语句
+        if (t.isIdentifier(get(paramAst, 'left'))) {
+          const declaratorName = get(paramAst, 'left.name');
+          if (declaratorName) {
+            // 把作用域内的变量重命名
+            const scopedDeclaratorName = componentScope.generateUidIdentifier(declaratorName);
+            currentScope.rename(declaratorName, scopedDeclaratorName.name);
+            // 全局变量定义
+            scopedDeclarations.push(t.variableDeclaration('let', [t.variableDeclarator(t.identifier(scopedDeclaratorName.name), null)]));
+            // 局部补上初始值
+            scopedExpressions.push(t.expressionStatement(
+              t.assignmentExpression('=', t.identifier(scopedDeclaratorName.name), get(paramAst, 'right')))
+            );
+          }
+        }
+      } else if (t.isRestElement(paramAst)) { // 如果是 rest 解构，直接提取到全局
+        let args = paramAst.argument;
+        let declaratorName = get(args, 'name');
+        // 把作用域内的变量重命名
+        const scopedDeclaratorName = componentScope.generateUidIdentifier(declaratorName);
+        currentScope.rename(declaratorName, scopedDeclaratorName.name);
+        // 全局变量定义
+        scopedDeclarations.push(t.variableDeclaration('let', [t.variableDeclarator(t.identifier(scopedDeclaratorName.name), null)]));
+      } else if (t.isObjectPattern(paramAst)) { // 把它转成一个变量定义
+        const scopedDeclaratorName = componentScope.generateUidIdentifier(); // 新生成一个 参数名
+        // 全局变量定义
+        scopedDeclarations.push(t.variableDeclaration('let', [t.variableDeclarator(t.identifier(scopedDeclaratorName.name), null)]));
+        scopedExpressions.push(
+          t.variableDeclaration('let', [t.variableDeclarator(paramAst, t.identifier(scopedDeclaratorName.name))])
+        );
+      }
+    }
+
+    if (globalPositionPath) {
+      if (t.isBlockStatement(bodyAst)) {
+        bodyAst.body.splice(0, 0, ...scopedExpressions);
+        for (let declaration of scopedDeclarations) {
+          globalPositionPath.insertBefore(declaration);
+        }
+      }
+    }
+  };
+
   const updateWithJSXElementFunctionScope = ({
     componentScope,
     withJSXElementFunctionPath,
@@ -170,8 +243,74 @@ function getExportDefaultComponentTemplate({
   };
 
   const { scope: componentScope } = exportDefaultComponentAst;
+
+  // 先处理一遍函数的参数，不用拍平，直接把参数提取到全局
+  // let exportDefaultComponentRootPath: t.NodePath<any>;
+  exportDefaultComponentAst.traverse({
+    enter(path: t.NodePath<any>) {
+      // if (!exportDefaultComponentRootPath) {
+      //   exportDefaultComponentRootPath = path;
+      //   debugger;
+      // }
+      if (t.isFunctionReturnStatement({ // 跳过组件函数本身的 return
+        functionAstNode: exportDefaultComponentAst.node,
+        returnStatementPath: path,
+      })) {
+        path.skip();
+      }
+      if (t.isJSXExpressionContainer(get(path, 'parentPath')) || t.isJSXExpressionContainer(get(path, 'parentPath.parentPath'))) { // 跳过 jsx 表达式中带参数的函数
+        path.skip();
+      }
+      if (!t.hasJSX(path.node)) {
+        path.skip();
+      }
+    },
+    FunctionDeclaration(path: t.NodePath<t.FunctionDeclaration>) {
+      if (t.hasJSX(path.node)) {
+        // let globalPositionPath: t.NodePath<any> = path;
+        // while(globalPositionPath.parentPath && globalPositionPath.parentPath.parentPath && (globalPositionPath.parentPath.parentPath.key !== exportDefaultComponentRootPath.key)) {
+        //   globalPositionPath = globalPositionPath.parentPath as any;
+        // }
+        updateWithJSXElementFunctionParams({
+          componentScope,
+          withJSXElementFunctionPath: path,
+          globalPositionPath: path,
+        });
+      }
+    },
+    ArrowFunctionExpression(path: t.NodePath<t.ArrowFunctionExpression>) {
+      if (t.hasJSX(path.node)) {
+        // let globalPositionPath: t.NodePath<any> = path;
+        // while(globalPositionPath.parentPath && globalPositionPath.parentPath.parentPath && (globalPositionPath.parentPath.parentPath.key !== exportDefaultComponentRootPath.key)) {
+        //   globalPositionPath = globalPositionPath.parentPath as any;
+        // }
+        updateWithJSXElementFunctionParams({
+          componentScope,
+          withJSXElementFunctionPath: path,
+          globalPositionPath: path.parentPath.parentPath,
+        });
+      }
+    },
+    FunctionExpression(path: t.NodePath<t.FunctionExpression>) {
+      if (t.hasJSX(path.node)) {
+        // let globalPositionPath: t.NodePath<any> = path;
+        // while(globalPositionPath.parentPath && globalPositionPath.parentPath.parentPath && (globalPositionPath.parentPath.parentPath.key !== exportDefaultComponentRootPath.key)) {
+        //   globalPositionPath = globalPositionPath.parentPath as any;
+        // }
+        updateWithJSXElementFunctionParams({
+          componentScope,
+          withJSXElementFunctionPath: path,
+          globalPositionPath: path.parentPath.parentPath,
+        });
+      }
+    },
+  });
+
+
+  console.log(123, generator(exportDefaultComponentAst.node).code);
+
   // 把所有包含 JSXElement 的函数拍平到一级
-  // 这里没用递归，而是做几次循环，因为写出错层套嵌 render jsx 的场景并不多见
+  // 这里没用递归，而是做几次循环，因为写出多层套嵌 render jsx 的场景并不多见
   while (hasUnFlattenJSXElementFunctions(exportDefaultComponentAst)) {
     exportDefaultComponentAst.traverse({
       enter(path: t.NodePath<any>) {
@@ -223,7 +362,7 @@ function getExportDefaultComponentTemplate({
     const withJSXElementFunctionNode = withJSXElementFunctionPath.node;
     const functionDeclarationBodyAst = withJSXElementFunctionNode.body;
     let scopedWithJSXElementFunctionAst: t.IfStatement | null = null;
-    // 给函数体包上 ifstatement
+    // 函数体没有 ifstatement，比较好处理，直接包上 ifstatement
     if (!t.functionBodyHasIfStatement(withJSXElementFunctionNode)) {
       const scopeBodys: any[] = [];
       let scopeReturnStatement = null;

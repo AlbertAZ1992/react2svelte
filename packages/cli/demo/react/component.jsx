@@ -20,7 +20,7 @@ function Example(props) {
 
 
 
-  function CC() {
+  function CC(p, { p1, p2: p22 = 1, p3 : { p4, ...argsp }}, p5 = 2, ...args) {
     let ssssss = 7
 
     const render = () => {
@@ -60,7 +60,7 @@ function Example(props) {
       const render = () => {
         let ttt = b * ssssss;
 
-        const render2 = () => {
+        const render2 = (props) => {
           let ttt = 4 * ssssss;
 
           return <div>{ttt}</div>;
